@@ -30,7 +30,7 @@ jobs:
         run: uv run ruff format --check .
 
       - name: Type check
-        run: uv run mypy packages/core/src packages/publisher/src packages/client/src
+        run: uv run mypy -p meshplay_core -p meshplay_publisher -p meshplay_client
 
       - name: Unit tests
         run: uv run pytest -m "not integration" --cov
