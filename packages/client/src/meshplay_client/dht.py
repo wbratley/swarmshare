@@ -3,7 +3,6 @@ from __future__ import annotations
 import time
 
 import libtorrent as lt
-from meshplay_core.bep44 import decode_bep44_value
 
 _POLL_INTERVAL = 0.1
 _BOOTSTRAP_POLL = 0.5
@@ -26,8 +25,24 @@ def get_manifest_infohash(
     deadline = time.monotonic() + timeout_seconds
     while time.monotonic() < deadline:
         for alert in ses.pop_alerts():
-            if isinstance(alert, lt.dht_mutable_item_alert) and alert.key == pubkey:
-                return decode_bep44_value(lt.bencode(alert.item))  # type: ignore[arg-type]
+            if isinstance(alert, lt.dht_mutable_item_alert) and bytes(alert.key) == pubkey:
+                item = alert.item
+                # In libtorrent 2.0+, item is {'key': pk, 'value': raw_bytes, ...}
+                # The 'value' contains the pre-bencoded data we stored (bytes).
+                if isinstance(item, dict):
+                    raw_value = item.get("value")
+                    if isinstance(raw_value, bytes):
+                        try:
+                            decoded = lt.bdecode(raw_value)
+                            if isinstance(decoded, dict):
+                                mfst = decoded.get(b"mfst")  # type: ignore[call-overload]
+                                if isinstance(mfst, bytes):
+                                    return mfst.decode("ascii")
+                                if isinstance(mfst, str):
+                                    return mfst
+                        except Exception:
+                            pass
+                return None
         time.sleep(_POLL_INTERVAL)
 
     return None

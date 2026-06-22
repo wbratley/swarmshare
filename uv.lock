@@ -10,6 +10,7 @@ resolution-markers = [
 members = [
     "meshplay-client",
     "meshplay-core",
+    "meshplay-integration",
     "meshplay-publisher",
 ]
 
@@ -414,6 +415,25 @@ dependencies = [
 requires-dist = [
     { name = "pydantic", specifier = ">=2.5,<3.0" },
     { name = "pynacl", specifier = ">=1.5,<2.0" },
+]
+
+[[package]]
+name = "meshplay-integration"
+version = "0.1.0"
+source = { editable = "packages/integration" }
+dependencies = [
+    { name = "libtorrent" },
+    { name = "meshplay-core" },
+    { name = "meshplay-publisher" },
+    { name = "pytest" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "libtorrent", specifier = ">=2.0.13" },
+    { name = "meshplay-core", editable = "packages/core" },
+    { name = "meshplay-publisher", editable = "packages/publisher" },
+    { name = "pytest", specifier = ">=8.3" },
 ]
 
 [[package]]

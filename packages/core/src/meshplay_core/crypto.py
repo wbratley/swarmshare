@@ -23,11 +23,21 @@ def pubkey_from_seed(seed: bytes) -> bytes:
 
 
 def signing_key_bytes_for_libtorrent(seed: bytes) -> bytes:
-    """Return the 64-byte (seed || pubkey) private key that libtorrent's
-    dht_put_mutable_item() expects for its BEP44 Ed25519 signing."""
-    sk = nacl.signing.SigningKey(seed)
-    # nacl stores the signing key as seed (32) + verify_key (32) = 64 bytes
-    return bytes(sk) + bytes(sk.verify_key)
+    """Return the 64-byte expanded key that libtorrent's dht_put_mutable_item() expects.
+
+    Libtorrent's ed25519 implementation (src/ed25519/sign.cpp) treats the 64-byte key as:
+      bytes[0:32] = private scalar = SHA-512(seed)[0:32] with RFC 8032 clamping
+      bytes[32:64] = nonce prefix   = SHA-512(seed)[32:64]
+
+    This differs from PyNaCl / libsodium which store (seed || pubkey).
+    """
+    import hashlib
+
+    expanded = bytearray(hashlib.sha512(seed).digest())
+    expanded[0] &= 248  # clear cofactor bits
+    expanded[31] &= 63  # clear high bits
+    expanded[31] |= 64  # set canonical high bit
+    return bytes(expanded)
 
 
 def sign_manifest(manifest: Manifest, seed: bytes) -> Manifest:

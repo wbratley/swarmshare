@@ -55,15 +55,23 @@ class TestSigningKeyForLibtorrent:
         key = signing_key_bytes_for_libtorrent(seed)
         assert len(key) == 64
 
-    def test_first_32_bytes_are_seed(self) -> None:
+    def test_is_sha512_expanded_form(self) -> None:
+        import hashlib
+
         seed, _ = generate_keypair()
         key = signing_key_bytes_for_libtorrent(seed)
-        assert key[:32] == seed
+        # The expanded key is SHA-512(seed) with RFC 8032 clamping applied.
+        expected = bytearray(hashlib.sha512(seed).digest())
+        expected[0] &= 248
+        expected[31] &= 63
+        expected[31] |= 64
+        assert key == bytes(expected)
 
-    def test_last_32_bytes_are_pubkey(self) -> None:
+    def test_not_seed_pubkey_concatenation(self) -> None:
         seed, pubkey = generate_keypair()
         key = signing_key_bytes_for_libtorrent(seed)
-        assert key[32:] == pubkey
+        # Libtorrent expects SHA-512(seed) with clamping, NOT seed||pubkey.
+        assert key != seed + pubkey
 
 
 class TestSignAndVerify:
