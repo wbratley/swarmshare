@@ -15,7 +15,7 @@ uv run ruff check .
 uv run ruff format .
 
 # Type check
-uv run mypy packages/core/src packages/publisher/src packages/client/src
+uv run mypy -p meshplay_core -p meshplay_publisher -p meshplay_client
 
 # Unit tests (all packages)
 uv run pytest -m "not integration"
